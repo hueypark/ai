@@ -3,8 +3,7 @@ package world
 import (
 	"time"
 
-	"github.com/hajimehoshi/ebiten"
-	"log"
+	"github.com/heavycannon/heavycannon/math/vector"
 )
 
 type World struct {
@@ -13,7 +12,9 @@ type World struct {
 
 type actor interface {
 	ID() int64
-	Render(screen *ebiten.Image)
+	Pos() vector.Vector
+	Forward() vector.Vector
+	Update(time.Duration)
 }
 
 func New() *World {
@@ -24,7 +25,9 @@ func New() *World {
 }
 
 func (w *World) Update(delta time.Duration) error {
-	log.Println(delta)
+	for _, actor := range w.actors {
+		actor.Update(delta)
+	}
 
 	return nil
 }
