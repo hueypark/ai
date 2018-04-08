@@ -1,8 +1,6 @@
 package world
 
 import (
-	"time"
-
 	"github.com/heavycannon/heavycannon/math/vector"
 )
 
@@ -14,7 +12,7 @@ type actor interface {
 	ID() int64
 	Pos() vector.Vector
 	Forward() vector.Vector
-	Update(time.Duration)
+	Update(float64)
 }
 
 func New() *World {
@@ -24,7 +22,7 @@ func New() *World {
 	return w
 }
 
-func (w *World) Update(delta time.Duration) error {
+func (w *World) Update(delta float64) error {
 	for _, actor := range w.actors {
 		actor.Update(delta)
 	}

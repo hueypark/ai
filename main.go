@@ -19,10 +19,10 @@ func main() {
 	lastUpdateTime := time.Now()
 	ebiten.Run(
 		func(screen *ebiten.Image) error {
-			delta := time.Since(lastUpdateTime)
+			delta := time.Since(lastUpdateTime).Seconds()
 			lastUpdateTime = time.Now()
 
-			ctx.PhysicsWorld.Tick(delta.Seconds())
+			ctx.PhysicsWorld.Tick(delta)
 
 			w.Update(delta)
 

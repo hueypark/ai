@@ -5,28 +5,54 @@ import (
 	"github.com/heavycannon/heavycannon/math/vector"
 	"github.com/heavycannon/heavycannon/shape/circle"
 	"github.com/hueypark/ai/ctx"
-	"time"
+	"github.com/hueypark/ai/task/move_to_pos"
+	"github.com/hueypark/ai/task/wait"
+	"gitlab.com/legionary/legionary"
+	"gitlab.com/legionary/legionary/composite"
 )
 
 type Legionary struct {
-	id      int64
-	body    *body.Body
-	forward vector.Vector
+	id                   int64
+	body                 *body.Body
+	forward              vector.Vector
+	acceleration         float64
+	maxSpeed             float64
+	holdAcceleration     float64
+	maxHoldPositionSpeed float64
+	bt                   legionary.BehaviorTree
 }
 
 func New() *Legionary {
 	l := &Legionary{}
 	l.id = ctx.IdGenerator.Generate()
 	l.body = createBody()
+	l.forward = vector.Vector{X: 0, Y: 1}
+	l.acceleration = 100
+	l.maxSpeed = 100
+	l.holdAcceleration = 50
+	l.maxHoldPositionSpeed = 10
 	ctx.PhysicsWorld.Add(l.body)
+
+	bt := legionary.BehaviorTree{}
+	sequence := &composite.Sequence{}
+	sequence.AddChild(move_to_pos.New(l, vector.Vector{100, -100}))
+	sequence.AddChild(wait.New(l, 5))
+	sequence.AddChild(move_to_pos.New(l, vector.Vector{100, 100}))
+	sequence.AddChild(wait.New(l, 5))
+	sequence.AddChild(move_to_pos.New(l, vector.Vector{-100, 100}))
+	sequence.AddChild(wait.New(l, 5))
+	sequence.AddChild(move_to_pos.New(l, vector.Vector{-100, -100}))
+	sequence.AddChild(wait.New(l, 5))
+	bt.SetRoot(sequence)
+	l.bt = bt
 
 	return l
 }
 
-var temp = true
-var xxTime time.Duration
+func (l *Legionary) Update(delta float64) {
+	l.bt.Update(delta)
 
-func (l *Legionary) Update(delta time.Duration) {
+	l.updateFriction()
 }
 
 func (l *Legionary) ID() int64 {
@@ -39,6 +65,48 @@ func (l *Legionary) Pos() vector.Vector {
 
 func (l *Legionary) Forward() vector.Vector {
 	return l.forward
+}
+
+func (l *Legionary) MoveTo(dest vector.Vector) {
+	dir := vector.Subtract(dest, l.body.Position())
+	dir.Normalize()
+	l.forward = dir
+
+	acc := vector.Multiply(l.forward, l.acceleration)
+
+	forwardSpeed := vector.Dot(l.forward, l.body.Velocity)
+	if l.maxSpeed < forwardSpeed {
+		return
+	}
+
+	l.body.AddForce(acc)
+}
+
+func (l *Legionary) HoldPosition(pos vector.Vector) {
+	dir := vector.Subtract(pos, l.body.Position())
+	dir.Normalize()
+
+	acc := vector.Multiply(dir, l.holdAcceleration)
+
+	l.body.AddForce(acc)
+}
+
+func (l *Legionary) updateFriction() {
+	backward := vector.Invert(l.forward)
+	backwardSpeed := vector.Dot(backward, l.body.Velocity)
+
+	if 30 < backwardSpeed {
+		l.body.AddForce(vector.Multiply(l.forward, 100))
+	}
+
+	right := vector.Vector{X: l.forward.Y, Y: -l.forward.X}
+	rightSpeed := vector.Dot(right, l.body.Velocity)
+	if rightSpeed < 0 {
+		l.body.AddForce(vector.Multiply(right, 50))
+	} else {
+		left := vector.Invert(right)
+		l.body.AddForce(vector.Multiply(left, 50))
+	}
 }
 
 func createBody() *body.Body {
