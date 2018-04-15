@@ -6,7 +6,6 @@ import (
 	"github.com/heavycannon/heavycannon/shape/circle"
 	"github.com/hueypark/ai/ctx"
 	"github.com/hueypark/ai/task/move_to_pos"
-	"github.com/hueypark/ai/task/wait"
 	"gitlab.com/legionary/legionary"
 	"gitlab.com/legionary/legionary/composite"
 )
@@ -20,6 +19,7 @@ type Legionary struct {
 	holdAcceleration     float64
 	maxHoldPositionSpeed float64
 	bt                   legionary.BehaviorTree
+	bb                   *blackboard
 }
 
 func New() *Legionary {
@@ -34,15 +34,9 @@ func New() *Legionary {
 	ctx.PhysicsWorld.Add(l.body)
 
 	bt := legionary.BehaviorTree{}
+	l.bb = &blackboard{}
 	sequence := &composite.Sequence{}
-	sequence.AddChild(move_to_pos.New(l, vector.Vector{100, -100}))
-	sequence.AddChild(wait.New(l, 5))
-	sequence.AddChild(move_to_pos.New(l, vector.Vector{100, 100}))
-	sequence.AddChild(wait.New(l, 5))
-	sequence.AddChild(move_to_pos.New(l, vector.Vector{-100, 100}))
-	sequence.AddChild(wait.New(l, 5))
-	sequence.AddChild(move_to_pos.New(l, vector.Vector{-100, -100}))
-	sequence.AddChild(wait.New(l, 5))
+	sequence.AddChild(move_to_pos.New(l, l.bb))
 	bt.SetRoot(sequence)
 	l.bt = bt
 
@@ -67,6 +61,10 @@ func (l *Legionary) Forward() vector.Vector {
 	return l.forward
 }
 
+func (l *Legionary) SetDest(dest vector.Vector) {
+	l.bb.SetDest(dest)
+}
+
 func (l *Legionary) MoveTo(dest vector.Vector) {
 	dir := vector.Subtract(dest, l.body.Position())
 	dir.Normalize()
@@ -84,9 +82,10 @@ func (l *Legionary) MoveTo(dest vector.Vector) {
 
 func (l *Legionary) HoldPosition(pos vector.Vector) {
 	dir := vector.Subtract(pos, l.body.Position())
+	temp := dir.Size()
 	dir.Normalize()
 
-	acc := vector.Multiply(dir, l.holdAcceleration)
+	acc := vector.Multiply(dir, l.holdAcceleration*temp)
 
 	l.body.AddForce(acc)
 }

@@ -8,6 +8,7 @@ import (
 type MoveToPos struct {
 	legionary.Node
 	actor actor
+	bb    tmep
 	dest  vector.Vector
 }
 
@@ -16,10 +17,14 @@ type actor interface {
 	MoveTo(dest vector.Vector)
 }
 
-func New(actor actor, dest vector.Vector) *MoveToPos {
+type tmep interface {
+	Dest() vector.Vector
+}
+
+func New(actor actor, bb tmep) *MoveToPos {
 	task := MoveToPos{}
-	task.dest = dest
 	task.actor = actor
+	task.bb = bb
 	return &task
 }
 
@@ -27,9 +32,9 @@ func (task *MoveToPos) Init() {
 }
 
 func (task *MoveToPos) Update(delta float64) legionary.State {
-	task.actor.MoveTo(task.dest)
+	task.actor.MoveTo(task.bb.Dest())
 
-	if vector.Subtract(task.actor.Pos(), task.dest).SizeSquared() < 10 {
+	if vector.Subtract(task.actor.Pos(), task.dest).SizeSquared() < 400 {
 		return legionary.Success
 	}
 

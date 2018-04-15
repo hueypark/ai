@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/hajimehoshi/ebiten"
+	"github.com/heavycannon/heavycannon/math/vector"
 	"github.com/hueypark/ai/actor/legionary"
 	"github.com/hueypark/ai/ctx"
 	"github.com/hueypark/ai/renderer"
@@ -10,11 +11,13 @@ import (
 	"time"
 )
 
+var l *legionary.Legionary
+
 func main() {
 	ctx.Init()
 
 	w := world.New()
-	l := legionary.New()
+	l = legionary.New()
 	w.AddActor(l)
 
 	lastUpdateTime := time.Now()
@@ -43,6 +46,8 @@ func main() {
 			mux.RLock()
 			defer mux.RUnlock()
 
+			handleInput(screen)
+
 			for _, actor := range w.Actors() {
 				renderer.Render(screen, actor)
 			}
@@ -53,4 +58,12 @@ func main() {
 		ctx.ScreenHeight,
 		1,
 		"AI")
+}
+
+func handleInput(screen *ebiten.Image) {
+	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
+		x, y := renderer.PosToWorld(ebiten.CursorPosition())
+
+		l.SetDest(vector.Vector{float64(x), float64(y)})
+	}
 }

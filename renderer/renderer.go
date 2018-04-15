@@ -17,9 +17,13 @@ type object interface {
 }
 
 func Render(screen *ebiten.Image, o object) {
-	pos := worldPosToRenderer(o.Pos())
-	dir := worldDirToRenderer(o.Forward())
+	pos := posFromWorld(o.Pos())
+	dir := dirFromWorld(o.Forward())
 	renderCircle(screen, pos, dir)
+}
+
+func PosToWorld(x, y int) (int, int) {
+	return x - ctx.ScreenWidth/2, -(y - ctx.ScreenHeight/2)
 }
 
 func renderCircle(screen *ebiten.Image, pos, forward vector.Vector) {
@@ -37,12 +41,12 @@ func renderCircle(screen *ebiten.Image, pos, forward vector.Vector) {
 	ebitenutil.DrawLine(screen, pos.X, pos.Y, end.X, end.Y, colornames.Green)
 }
 
-func worldPosToRenderer(pos vector.Vector) vector.Vector {
+func posFromWorld(pos vector.Vector) vector.Vector {
 	return vector.Vector{
 		X: pos.X + float64(ctx.ScreenWidth)*0.5,
 		Y: -pos.Y + float64(ctx.ScreenHeight)*0.5}
 }
 
-func worldDirToRenderer(dir vector.Vector) vector.Vector {
+func dirFromWorld(dir vector.Vector) vector.Vector {
 	return vector.Vector{X: dir.X, Y: -dir.Y}
 }
